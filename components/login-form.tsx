@@ -2,13 +2,24 @@
 import { Button } from "@/components/ui/button";
 import { Github } from "lucide-react";
 import { signIn } from "next-auth/react";
+import { toast } from "sonner";
 
 export function LoginForm() {
   const handleGoogleSignIn = async () => {
-    await signIn("google", { callbackUrl: "/dashboard" });
+    try {
+      await signIn("google", { callbackUrl: "/dashboard" });
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to sign in with Google");
+    }
   };
   const handleGithubSignIn = async () => {
-    await signIn("github", { callbackUrl: "/dashboard" });
+    try {
+      await signIn("github", { callbackUrl: "/dashboard" });
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to sign in with GitHub");
+    }
   };
   return (
     <div className="flex flex-col gap-6 max-w-sm mx-auto">
