@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { normalizeWeather } from "./utils";
 
 export const getWeather = tool({
   description: "Get the weather in a location (fahrenheit)",
@@ -7,12 +8,13 @@ export const getWeather = tool({
     location: z.string().describe("The location to get the weather for"),
   }),
   execute: async ({ location }) => {
-    const temperature = Math.round(Math.random() * (90 - 32) + 32);
+    const res = await fetch(
+      `https://api.weatherapi.com/v1/forecast.json?key=${process.env.WEATHER_API_KEY}&q=${location}&days=7&hour=0&aqi=no&alerts=no&astro=0`,
+    );
 
-    return {
-      location,
-      temperature,
-    };
+    const data = await res.json();
+
+    return normalizeWeather(data);
   },
 });
 
