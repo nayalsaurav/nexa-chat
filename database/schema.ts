@@ -5,6 +5,8 @@ import {
   text,
   primaryKey,
   integer,
+  jsonb,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "@auth/core/adapters";
 
@@ -90,3 +92,41 @@ export const authenticators = pgTable(
     },
   ],
 );
+
+export const messageRoleEnum = pgEnum("message_role", [
+  "user",
+  "assistant",
+  "system",
+  "tool",
+]);
+
+export const conversation = pgTable("conversation", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+
+  title: text("title").notNull(),
+
+  createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+
+  updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
+});
+
+export const messages = pgTable("message", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+
+  conversationId: text("conversationId")
+    .notNull()
+    .references(() => conversation.id, { onDelete: "cascade" }),
+
+  role: messageRoleEnum("role").notNull(),
+
+  parts: jsonb("parts").notNull(),
+
+  createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+});

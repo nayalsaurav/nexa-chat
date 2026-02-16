@@ -1,133 +1,64 @@
-"use client";
+import { ChatInterface } from "@/components/dashboard/chat/chat-interface";
+import { db } from "@/database";
+import { messages, conversation } from "@/database/schema";
+import { eq, and } from "drizzle-orm";
+import { UIMessage } from "ai";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { MessageSquareOff } from "lucide-react";
+import { NewChatButton } from "@/components/dashboard/chat/new-chat-button";
 
-import { useChat } from "@ai-sdk/react";
-import { useState, useRef, useEffect } from "react";
-import { User, Bot } from "lucide-react";
-import { RaceCard } from "@/components/dashboard/chat/race-card";
-import { WeatherCard } from "@/components/dashboard/chat/weather-card";
-import { StockCard } from "@/components/dashboard/chat/stock-card";
-import { F1MatchOutput, WeatherOutput, StockPriceOutput } from "@/types";
-import { Button } from "@/components/ui/button";
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
 
-export default function Chat() {
-  const [input, setInput] = useState("");
-  const { messages, sendMessage, status } = useChat();
-  const bottomRef = useRef<HTMLDivElement>(null);
+export default async function ChatPage({ params }: PageProps) {
+  const { id } = await params;
+  const session = await auth();
+  if (!session?.user?.id) {
+    return redirect("/login");
+  }
+  const [existingConv] = await db
+    .select()
+    .from(conversation)
+    .where(
+      and(eq(conversation.id, id), eq(conversation.userId, session.user.id)),
+    );
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  if (!existingConv) {
+    return (
+      <section className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] gap-4 text-center px-4">
+        <MessageSquareOff size={48} className="text-muted-foreground" />
+        <h1 className="text-xl font-semibold text-foreground">
+          Conversation not found
+        </h1>
+        <p className="text-sm text-muted-foreground max-w-sm">
+          This conversation doesn&apos;t exist or you don&apos;t have access to
+          it.
+        </p>
+        <NewChatButton />
+      </section>
+    );
+  }
+
+  const existingMessages = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.conversationId, id));
+  const initialMessages = existingMessages.map(
+    (msg) =>
+      ({
+        id: msg.id,
+        role: msg.role,
+        parts: msg.parts,
+      }) as unknown as UIMessage,
+  );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-background">
-      <div className="flex-1 overflow-y-auto no-scrollbar px-2 py-4 md:px-4 md:py-6 space-y-6 max-w-4xl w-full mx-auto">
-        {messages.map((message) => {
-          const isUser = message.role === "user";
-
-          return (
-            <div
-              key={message.id}
-              className={`flex items-start gap-3 ${
-                isUser ? "flex-row" : "flex-row-reverse"
-              }`}
-            >
-              <div
-                className={`flex items-center justify-center h-10 w-10 rounded-full shadow-md ${
-                  isUser
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground"
-                }`}
-              >
-                {isUser ? <User size={18} /> : <Bot size={18} />}
-              </div>
-
-              <div
-                className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-3 py-2 md:px-4 md:py-3 text-sm shadow-md whitespace-pre-wrap ${
-                  isUser
-                    ? "bg-primary text-primary-foreground rounded-bl-none"
-                    : "bg-card text-card-foreground rounded-br-none border border-border"
-                }`}
-              >
-                {message.parts.map((part, i) => {
-                  switch (part.type) {
-                    case "text":
-                      return <div key={`${message.id}-${i}`}>{part.text}</div>;
-
-                    case "tool-weather": {
-                      if (!part.output) return null;
-                      return (
-                        <WeatherCard
-                          key={`${message.id}-${i}`}
-                          weatherData={part.output as WeatherOutput}
-                        />
-                      );
-                    }
-
-                    case "tool-f1Matches": {
-                      if (!part.output) return null;
-
-                      return (
-                        <RaceCard
-                          key={`${message.id}-${i}`}
-                          raceData={part.output as F1MatchOutput}
-                        />
-                      );
-                    }
-
-                    case "tool-stockPrice": {
-                      if (!part.output) return null;
-                      return (
-                        <StockCard
-                          key={`${message.id}-${i}`}
-                          stockData={part.output as StockPriceOutput}
-                        />
-                      );
-                    }
-
-                    default:
-                      return null;
-                  }
-                })}
-              </div>
-            </div>
-          );
-        })}
-
-        {status === "streaming" && (
-          <div className="flex items-center gap-3 flex-row-reverse">
-            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-muted text-foreground">
-              <Bot size={18} />
-            </div>
-            <div className="bg-card text-card-foreground border border-border px-4 py-3 rounded-2xl rounded-br-none shadow-md text-sm animate-pulse">
-              Thinking...
-            </div>
-          </div>
-        )}
-
-        <div ref={bottomRef} />
-      </div>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!input.trim()) return;
-          sendMessage({ text: input });
-          setInput("");
-        }}
-        className="border-t border-border bg-background/70 backdrop-blur-md p-2 md:p-4"
-      >
-        <div className="max-w-4xl mx-auto flex gap-3">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.currentTarget.value)}
-            placeholder="Type your message..."
-            className="flex-1 rounded-xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
-          />
-          <Button type="submit" variant="default">
-            Send
-          </Button>
-        </div>
-      </form>
-    </div>
+    <ChatInterface
+      id={id}
+      initialMessages={initialMessages}
+      initialTitle={existingConv.title}
+    />
   );
 }

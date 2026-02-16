@@ -15,47 +15,35 @@ import {
 } from "@/components/ui/sidebar";
 import { User } from "next-auth";
 
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  navMain: [
+export function AppSidebar({
+  user,
+  conversations,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  user: User;
+  conversations: { id: string; title: string }[];
+}) {
+  const navMain = [
     {
       title: "Your Chats",
       url: "#",
       icon: MessageCircle,
       isActive: true,
-      items: [
-        {
-          title: "Chat 1",
-          url: "#",
-        },
-        {
-          title: "Chat 2",
-          url: "#",
-        },
-        {
-          title: "Chat 3",
-          url: "#",
-        },
-      ],
+      items: conversations.map((conv) => ({
+        id: conv.id,
+        title: conv.title,
+        url: `/dashboard/chat/${conv.id}`,
+      })),
     },
-  ],
-};
+  ];
 
-export function AppSidebar({
-  user,
-  ...props
-}: React.ComponentProps<typeof Sidebar> & { user: User }) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <Header />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />
