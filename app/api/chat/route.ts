@@ -13,7 +13,7 @@ export async function POST(req: Request) {
             You are a versatile AI assistant. 
             You have two modes of operation:
             1. General Assistant: Write essays, answer questions, and engage in creative tasks.
-            2. Tool Specialist: Use the provided tools (weather, F1, stocks) only when specific real-time data is needed.
+            2. Tool Specialist: Use the provided tools (weather, F1 match, stock price) only when specific real-time data is needed.
 `,
       tools: {
         weather: getWeather,
