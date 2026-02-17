@@ -7,10 +7,11 @@ import { RaceCard } from "@/components/dashboard/chat/race-card";
 import { WeatherCard } from "@/components/dashboard/chat/weather-card";
 import { StockCard } from "@/components/dashboard/chat/stock-card";
 import { F1MatchOutput, WeatherOutput, StockPriceOutput } from "@/types";
-import { Button } from "@/components/ui/button";
 import { DefaultChatTransport, UIMessage } from "ai";
 import { useRouter } from "next/navigation";
 import { AnimatedText } from "./animate-text";
+import { EmptyChatState } from "./empty-chat-state";
+import { ChatForm } from "./chat-form";
 
 interface ChatInterfaceProps {
   id: string;
@@ -42,6 +43,36 @@ export function ChatInterface({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    const pending = sessionStorage.getItem("initialMessage");
+    if (pending) {
+      sessionStorage.removeItem("initialMessage");
+      sendMessage({ text: pending });
+    }
+  }, []);
+
+  const isLoading = status === "streaming" || status === "submitted";
+
+  const handleSubmit = () => {
+    if (!input.trim()) return;
+    sendMessage({ text: input });
+    setInput("");
+  };
+
+  if (messages.length === 0) {
+    return (
+      <EmptyChatState>
+        <ChatForm
+          input={input}
+          onInputChange={setInput}
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+          variant="centered"
+        />
+      </EmptyChatState>
+    );
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-background">
@@ -146,7 +177,7 @@ export function ChatInterface({
             <div className="flex items-center justify-center h-10 w-10 rounded-full bg-muted text-foreground">
               <Bot size={18} />
             </div>
-            <div className="bg-card text-card-foreground border border-border px-4 py-3 rounded-2xl rounded-br-none shadow-md text-sm animate-pulse">
+            <div className="bg-card text-card-foreground border border-border px-4 py-3 rounded-2xl rounded-br-none shadow-md text-sm">
               Something went wrong. Please try again.
             </div>
           </div>
@@ -155,33 +186,12 @@ export function ChatInterface({
         <div ref={bottomRef} />
       </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!input.trim()) return;
-          sendMessage({ text: input });
-          setInput("");
-        }}
-        className="border-t border-border bg-background/70 backdrop-blur-md p-2 md:p-4"
-      >
-        <div className="max-w-4xl mx-auto flex gap-3">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.currentTarget.value)}
-            placeholder="Type your message..."
-            className="flex-1 rounded-xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
-          />
-          <Button
-            type="submit"
-            variant="default"
-            disabled={status === "streaming" || status === "submitted"}
-          >
-            {status === "streaming" || status === "submitted"
-              ? "Sending..."
-              : "Send"}
-          </Button>
-        </div>
-      </form>
+      <ChatForm
+        input={input}
+        onInputChange={setInput}
+        onSubmit={handleSubmit}
+        isLoading={isLoading}
+      />
     </div>
   );
 }

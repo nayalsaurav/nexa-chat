@@ -28,18 +28,22 @@ export function SidebarHeader() {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <div className="flex items-center gap-2 px-2 py-2">
+        <SidebarMenuButton
+          size="lg"
+          className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+        >
           <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
             <MessageCircle className="size-5" />
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-bold text-lg">Chat App</span>
           </div>
-        </div>
+        </SidebarMenuButton>
       </SidebarMenuItem>
-      <SidebarMenuItem>
+      <SidebarMenuItem className="mt-2 mb-0 pb-0">
         <SidebarMenuButton
           size="lg"
+          tooltip="New Chat"
           className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           onClick={handleNewChat}
         >
