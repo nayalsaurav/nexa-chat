@@ -71,7 +71,11 @@ export function ChatInterface({
 
   if (messages.length === 0) {
     return (
-      <EmptyChatState>
+      <EmptyChatState
+        onPromptClick={(prompt) => {
+          sendMessage({ text: prompt });
+        }}
+      >
         <ChatForm
           input={input}
           onInputChange={setInput}
